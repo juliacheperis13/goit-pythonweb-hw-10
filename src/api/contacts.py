@@ -12,10 +12,17 @@ router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 @router.get("/", response_model=List[ContactResponse])
 async def read_contacts(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    skip: int = 0,
+    limit: int = 100,
+    first_name=None,
+    last_name=None,
+    email=None,
+    db: AsyncSession = Depends(get_db),
 ):
     contact_service = ContactService(db)
-    contacts = await contact_service.get_contacts(skip, limit)
+    contacts = await contact_service.get_contacts(
+        skip, limit, first_name, last_name, email
+    )
     return contacts
 
 
@@ -53,9 +60,17 @@ async def update_contact(
 @router.delete("/{contact_id}", response_model=ContactResponse)
 async def remove_contact(contact_id: int, db: AsyncSession = Depends(get_db)):
     contact_service = ContactService(db)
-    tag = await contact_service.remove_contact(contact_id)
-    if tag is None:
+    contact = await contact_service.remove_contact(contact_id)
+    if contact is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found"
         )
-    return tag
+    return contact
+
+
+@router.get("/contacts/birthdays/", response_model=List[ContactResponse])
+async def upcoming_birthdays(days: int, db: AsyncSession = Depends(get_db)):
+    contact_service = ContactService(db)
+    contacts = await contact_service.upcoming_birthdays(days)
+    print(days)
+    return contacts
